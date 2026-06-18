@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>식단 Now — 이화여대 학식 가이드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream:   #fdf6ec;
+      --warm:    #f5e6cc;
+      --brown:   #6b4c2a;
+      --rust:    #c0622f;
+      --gold:    #d4a336;
+      --olive:   #7a8c5e;
+      --ink:     #2a1f14;
+      --muted:   #9a8070;
+      --card-bg: #fffbf4;
+      --border:  rgba(107,76,42,0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── 배경 텍스처 ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(212,163,54,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 90%, rgba(192,98,47,0.07) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23fdf6ec'/%3E%3Ccircle cx='1' cy='1' r='0.6' fill='rgba(107,76,42,0.06)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; max-width: 430px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── 헤더 ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px 14px;
+      border-bottom: 1.5px solid var(--border);
+      background: rgba(253,246,236,0.92);
+      backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-emoji { font-size: 26px; line-height: 1; }
+    .brand h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--brown); letter-spacing: -0.3px;
+    }
+    .brand p { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 1px; }
+    .header-badge {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.5px;
+      background: var(--rust); color: #fff;
+      padding: 4px 10px; border-radius: 20px;
+    }
+
+    /* ── 페이지 ── */
+    .page { display: none; flex: 1; padding: 20px 16px 100px; }
+    .page.active { display: block; }
+
+    /* ── 히어로 ── */
+    .hero {
+      background: linear-gradient(135deg, var(--brown) 0%, #4a3020 100%);
+      border-radius: 20px; padding: 28px 24px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '🍽️';
+      position: absolute; right: -10px; bottom: -10px;
+      font-size: 90px; opacity: 0.12; transform: rotate(-15deg);
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--gold); border: 1px solid var(--gold);
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+    .hero h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px; font-weight: 700; color: #fff;
+      line-height: 1.35; margin-bottom: 8px;
+    }
+    .hero p { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.6; margin-bottom: 18px; }
+    .hero-stats { display: flex; gap: 16px; }
+    .hero-stat { text-align: center; }
+    .hero-stat strong { display: block; font-size: 20px; font-weight: 700; color: var(--gold); font-family: 'Cormorant Garamond', serif; }
+    .hero-stat span { font-size: 10px; color: rgba(255,255,255,0.55); }
+
+    /* ── 섹션 ── */
+    .section { margin-bottom: 24px; }
+    .section-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-head h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; font-weight: 700; color: var(--brown);
+    }
+    .section-head span { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+
+    /* ── 식당 탭 ── */
+    .cafeteria-tabs {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+      scrollbar-width: none; margin-bottom: 16px;
+    }
+    .cafeteria-tabs::-webkit-scrollbar { display: none; }
+    .cafe-tab {
+      flex-shrink: 0; padding: 8px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 500; cursor: pointer; border: none;
+      background: var(--card-bg); color: var(--muted);
+      border: 1.5px solid var(--border); transition: all 0.2s;
+    }
+    .cafe-tab.active {
+      background: var(--brown); color: #fff; border-color: var(--brown);
+    }
+
+    /* ── 메뉴 카드 ── */
+    .menu-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 18px; padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(107,76,42,0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .menu-card:active { transform: scale(0.985); }
+
+    .menu-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .menu-meal-type {
+      font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--rust); font-weight: 700; margin-bottom: 4px;
+    }
+    .menu-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 19px; font-weight: 700; color: var(--brown); line-height: 1.2;
+    }
+    .menu-price {
+      font-size: 15px; font-weight: 700; color: var(--rust);
+      font-family: 'Cormorant Garamond', serif; white-space: nowrap; margin-left: 12px;
+    }
+
+    .menu-items { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .menu-item-chip {
+      font-size: 11px; color: var(--ink);
+      background: var(--warm); border-radius: 20px;
+      padding: 3px 10px;
+    }
+    .menu-item-chip.main {
+      background: rgba(192,98,47,0.1); color: var(--rust); font-weight: 500;
+    }
+
+    .menu-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .crowd-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 500;
+    }
+    .crowd-badge.여유 { background: rgba(122,140,94,0.15); color: var(--olive); }
+    .crowd-badge.보통 { background: rgba(212,163,54,0.15); color: #9a7420; }
+    .crowd-badge.혼잡 { background: rgba(192,98,47,0.15); color: var(--rust); }
+    .crowd-badge.매우혼잡 { background: rgba(180,30,30,0.12); color: #b01e1e; }
+
+    .wait-badge {
+      font-size: 11px; color: var(--muted);
+    }
+    .calorie-badge {
+      font-size: 11px; color: var(--muted);
+      margin-left: auto;
+    }
+
+    /* ── 혼잡도 게이지 ── */
+    .crowd-bar-wrap { margin-top: 10px; }
+    .crowd-bar-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .crowd-bar-bg { height: 6px; background: var(--warm); border-radius: 10px; overflow: hidden; }
+    .crowd-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+
+    /* ── 운영 상태 뱃지 ── */
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .status-open { background: var(--olive); box-shadow: 0 0 0 2px rgba(122,140,94,0.25); animation: pulse-green 2s infinite; }
+    .status-closed { background: var(--muted); }
+    .status-soon { background: var(--gold); box-shadow: 0 0 0 2px rgba(212,163,54,0.25); }
+    @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 2px rgba(122,140,94,0.25)} 50%{box-shadow:0 0 0 4px rgba(122,140,94,0.1)} }
+
+    /* ── 식당 정보 카드 ── */
+    .cafeteria-info-card {
+      background: var(--card-bg); border: 1.5px solid var(--border);
+      border-radius: 18px; padding: 16px; margin-bottom: 16px;
+      display: flex; gap: 14px; align-items: center;
+    }
+    .cafe-icon { font-size: 32px; flex-shrink: 0; }
+    .cafe-info h4 { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 3px; }
+    .cafe-info p { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .cafe-status { font-size: 12px; font-weight: 500; display: flex; align-items: center; margin-top: 4px; }
+
+    /* ── 리뷰 카드 ── */
+    .review-card {
+      background: var(--card-bg); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 16px; margin-bottom: 10px;
+    }
+    .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .reviewer { font-size: 12px; font-weight: 700; color: var(--brown); }
+    .review-date { font-size: 10px; color: var(--muted); }
+    .review-stars { color: var(--gold); font-size: 13px; margin-bottom: 6px; }
+    .review-text { font-size: 12px; color: var(--ink); line-height: 1.6; }
+    .review-cafe-tag {
+      display: inline-block; font-size: 10px;
+      background: var(--warm); color: var(--brown);
+      padding: 2px 8px; border-radius: 10px; margin-top: 8px;
+    }
+
+    /* ── 즐겨찾기 버튼 ── */
+    .fav-btn {
+      background: none; border: none; cursor: pointer; font-size: 18px;
+      line-height: 1; padding: 4px; transition: transform 0.2s;
+    }
+    .fav-btn:active { transform: scale(1.3); }
+
+    /* ── 검색 ── */
+    .search-box {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card-bg); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 12px 14px; margin-bottom: 16px;
+    }
+    .search-box input {
+      flex: 1; border: none; background: none; font-size: 13px;
+      color: var(--ink); outline: none; font-family: 'Noto Sans KR', sans-serif;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+
+    /* ── 필터 칩 ── */
+    .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; margin-bottom: 14px; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex-shrink: 0; padding: 6px 13px; border-radius: 20px;
+      font-size: 11px; font-weight: 500; cursor: pointer; border: none;
+      background: var(--card-bg); color: var(--muted);
+      border: 1.5px solid var(--border); transition: all 0.2s;
+    }
+    .filter-chip.active { background: var(--brown); color: #fff; border-color: var(--brown); }
+
+    /* ── 오늘의 추천 ── */
+    .today-pick {
+      background: linear-gradient(135deg, #f9f0df, #f5e2c0);
+      border: 1.5px solid rgba(212,163,54,0.3);
+      border-radius: 18px; padding: 18px; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .today-pick::before { content: '⭐'; position: absolute; right: 14px; top: 14px; font-size: 20px; opacity: 0.4; }
+    .pick-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); font-weight: 700; margin-bottom: 6px; }
+    .pick-title { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 700; color: var(--brown); margin-bottom: 4px; }
+    .pick-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── 알림 배너 ── */
+    .alert-banner {
+      background: rgba(192,98,47,0.08); border: 1px solid rgba(192,98,47,0.2);
+      border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;
+      font-size: 12px; color: var(--rust); display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── 후기 폼 ── */
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 11px; font-weight: 700; color: var(--brown); letter-spacing: 0.3px; margin-bottom: 6px; display: block; text-transform: uppercase; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 12px 14px; border-radius: 12px;
+      border: 1.5px solid var(--border); background: var(--card-bg);
+      font-family: 'Noto Sans KR', sans-serif; font-size: 13px; color: var(--ink);
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--brown); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+
+    /* ── 버튼 ── */
+    .btn-primary {
+      width: 100%; padding: 14px; border-radius: 14px;
+      background: var(--brown); color: #fff; border: none; cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 0.3px; transition: all 0.2s;
+    }
+    .btn-primary:hover { background: #5a3d1e; }
+    .btn-ghost {
+      padding: 10px 16px; border-radius: 12px;
+      background: transparent; color: var(--brown);
+      border: 1.5px solid var(--border); cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 12px; font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--brown); }
+
+    /* ── 별점 ── */
+    .star-rating { display: flex; gap: 6px; }
+    .star { font-size: 24px; cursor: pointer; filter: grayscale(1) opacity(0.3); transition: all 0.15s; }
+    .star.active { filter: none; }
+
+    /* ── 바텀 내비 ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      display: flex; background: rgba(253,246,236,0.95);
+      backdrop-filter: blur(14px); border-top: 1.5px solid var(--border);
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1; padding: 10px 0 14px; border: none; background: none; cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif; font-size: 10px; font-weight: 500;
+      color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: color 0.2s;
+    }
+    .nav-item.active { color: var(--brown); }
+    .nav-icon { font-size: 20px; line-height: 1; }
+
+    /* ── 로딩 스켈레톤 ── */
+    .skeleton { background: linear-gradient(90deg, var(--warm) 25%, #fdf0d8 50%, var(--warm) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 8px; }
+    @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+
+    /* ── 지도 영역 ── */
+    #kakaoMap { width: 100%; height: 340px; border-radius: 18px; overflow: hidden; border: 1.5px solid var(--border); }
+
+    /* ── 마이페이지 ── */
+    .my-card {
+      background: linear-gradient(135deg, var(--brown), #3a2510);
+      border-radius: 20px; padding: 24px; margin-bottom: 20px; color: #fff;
+    }
+    .my-avatar { font-size: 42px; margin-bottom: 10px; }
+    .my-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .my-email { font-size: 12px; opacity: 0.6; margin-bottom: 18px; }
+    .my-stats-row { display: flex; gap: 20px; }
+    .my-stat { text-align: center; }
+    .my-stat strong { display: block; font-size: 22px; font-family: 'Cormorant Garamond', serif; font-weight: 700; color: var(--gold); }
+    .my-stat span { font-size: 10px; opacity: 0.65; }
+
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* ── 운영시간 뱃지 ── */
+    .hours-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; padding: 4px 10px; border-radius: 20px;
+      background: rgba(122,140,94,0.12); color: var(--olive); font-weight: 500;
+    }
+    .hours-badge.closed { background: rgba(154,128,112,0.12); color: var(--muted); }
+
+    /* ── 실시간 업데이트 표시 ── */
+    .live-dot {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; color: var(--olive);
+    }
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--olive); animation: pulse-green 1.5s infinite;
+    }
+
+    .subtle { font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px; }
+
+    /* ── 애니메이션 ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .menu-card, .review-card, .cafeteria-info-card { animation: fadeUp 0.4s ease both; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-emoji">🍽️</div>
+      <div>
+        <h1>식단 Now</h1>
+        <p>ewha campus dining guide</p>
+      </div>
+    </div>
+    <div class="header-badge" id="liveTime">--:--</div>
+  </header>
+
+  <div style="flex:1; overflow-y:auto;">
+
+    <!-- ── 홈 ── -->
+    <section class="page active" id="page-home">
+
+      <div class="hero">
+        <div class="hero-badge">EWHA CAMPUS ONLY</div>
+        <h2>오늘 뭐 먹지?<br>학식 메뉴를 바로 확인해~</h2>
+        <p>혼잡도·웨이팅·칼로리까지<br>학생 참여로 실시간 업데이트</p>
+        <div class="hero-stats">
+          <div class="hero-stat"><strong id="openCount">0</strong><span>운영 중</span></div>
+          <div class="hero-stat"><strong id="menuCount">0</strong><span>오늘 메뉴</span></div>
+          <div class="hero-stat"><strong id="avgWait">0분</strong><span>평균 대기</span></div>
+        </div>
+      </div>
+
+      <div class="alert-banner" id="alertBanner" style="display:none;">
+        <span>⚠️</span><span id="alertText"></span>
+      </div>
+
+      <div class="today-pick">
+        <div class="pick-label">✦ 오늘의 추천</div>
+        <div class="pick-title" id="todayPickTitle">학생식당 A코스</div>
+        <div class="pick-desc" id="todayPickDesc">혼잡도 낮고 평점 높아요 — 지금 바로 가기 딱 좋아요!</div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3>식당 선택</h3>
+          <span class="live-dot">실시간</span>
+        </div>
+        <div class="cafeteria-tabs" id="cafeTabs"></div>
+      </div>
+
+      <div class="search-box">
+        <span>🔎</span>
+        <input type="text" id="searchInput" placeholder="메뉴 이름, 식당 검색…" />
+      </div>
+
+      <div class="filters" id="filterRow">
+        <button class="filter-chip active" data-filter="all">전체</button>
+        <button class="filter-chip" data-filter="아침">🌅 아침</button>
+        <button class="filter-chip" data-filter="점심">☀️ 점심</button>
+        <button class="filter-chip" data-filter="저녁">🌙 저녁</button>
+        <button class="filter-chip" data-filter="여유">✅ 여유</button>
+        <button class="filter-chip" data-filter="low-cal">🥗 저칼로리</button>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h3>오늘의 메뉴</h3>
+          <span id="menuStatus">불러오는 중…</span>
+        </div>
+        <div id="menuList"></div>
+      </div>
+
+    </section>
+
+    <!-- ── 식당 정보 ── -->
+    <section class="page" id="page-cafeteria">
+      <div class="section">
+        <div class="section-head"><h3>식당 안내</h3><span>운영시간 · 위치</span></div>
+        <div id="cafeteriaInfoList"></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h3>캠퍼스 지도</h3></div>
+        <div id="kakaoMap"></div>
+      </div>
+    </section>
+
+    <!-- ── 리뷰 ── -->
+    <section class="page" id="page-review">
+      <div class="section">
+        <div class="section-head"><h3>실시간 후기</h3><span>학생 참여형</span></div>
+        <div id="reviewList"></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h3>후기 남기기</h3></div>
+        <div style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:18px;padding:18px;">
+          <div class="form-group">
+            <label class="form-label" for="reviewCafe">식당</label>
+            <select class="form-select" id="reviewCafe"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">맛 평점</label>
+            <div class="star-rating" id="starRating">
+              <span class="star" data-v="1">⭐</span>
+              <span class="star" data-v="2">⭐</span>
+              <span class="star" data-v="3">⭐</span>
+              <span class="star" data-v="4">⭐</span>
+              <span class="star" data-v="5">⭐</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="crowdSelect">혼잡도</label>
+            <select class="form-select" id="crowdSelect">
+              <option value="">선택하세요</option>
+              <option value="여유">여유</option>
+              <option value="보통">보통</option>
+              <option value="혼잡">혼잡</option>
+              <option value="매우혼잡">매우 혼잡</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reviewText">한 줄 후기</label>
+            <textarea class="form-textarea" id="reviewText" placeholder="오늘 학식 어땠나요?"></textarea>
+          </div>
+          <button class="btn-primary" id="submitReviewBtn">📝 후기 등록하기</button>
+          <p id="reviewMsg" class="subtle" style="margin-top:10px;"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 마이 ── -->
+    <section class="page" id="page-my">
+      <div class="my-card">
+        <div class="my-avatar">👤</div>
+        <div class="my-name">이화인</div>
+        <div class="my-email">ewha@ewhain.net</div>
+        <div class="my-stats-row">
+          <div class="my-stat"><strong id="myFavCount">0</strong><span>즐겨찾기</span></div>
+          <div class="my-stat"><strong id="myReviewCount">0</strong><span>작성 후기</span></div>
+          <div class="my-stat"><strong id="myVisitCount">0</strong><span>방문 횟수</span></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h3>즐겨찾기 메뉴</h3></div>
+        <div id="favList"><p class="subtle">즐겨찾기한 메뉴가 없어요.</p></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h3>내 후기</h3></div>
+        <div id="myReviewList"><p class="subtle">작성한 후기가 없어요.</p></div>
+      </div>
+    </section>
+
+  </div><!-- scroll wrap -->
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home"><span class="nav-icon">🏠</span>홈</button>
+    <button class="nav-item" data-page="cafeteria"><span class="nav-icon">🏫</span>식당</button>
+    <button class="nav-item" data-page="review"><span class="nav-icon">💬</span>후기</button>
+    <button class="nav-item" data-page="my"><span class="nav-icon">👤</span>마이</button>
+  </nav>
+</div>
+
+<script type="text/javascript"
+  src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_KEY&libraries=services">
+</script>
+<script>
+// =====================================================
+// 데이터
+// =====================================================
+const cafeterias = [
+  {
+    id: "student",
+    name: "학생식당",
+    icon: "🏠",
+    building: "학생문화관",
+    floor: "1층",
+    hours: { 아침:"07:30–09:00", 점심:"11:00–14:00", 저녁:"17:00–19:00" },
+    location: "학생문화관 1층",
+    lat: 37.56261, lng: 126.94751,
+    open: true,
+    phone: "02-3277-2114"
+  },
+  {
+    id: "ecc",
+    name: "ECC 식당",
+    icon: "🏛️",
+    building: "ECC",
+    floor: "B3",
+    hours: { 아침:"–", 점심:"11:00–14:30", 저녁:"17:00–18:30" },
+    location: "ECC 지하 3층",
+    lat: 37.56219, lng: 126.94682,
+    open: true,
+    phone: "02-3277-3000"
+  },
+  {
+    id: "faculty",
+    name: "교직원식당",
+    icon: "🎓",
+    building: "본관",
+    floor: "2층",
+    hours: { 아침:"–", 점심:"11:30–13:30", 저녁:"–" },
+    location: "본관 2층",
+    lat: 37.56310, lng: 126.94770,
+    open: true,
+    phone: "02-3277-2115"
+  },
+  {
+    id: "guesthouse",
+    name: "이화회관 레스토랑",
+    icon: "🍷",
+    building: "이화회관",
+    floor: "1층",
+    hours: { 아침:"–", 점심:"11:30–14:00", 저녁:"17:30–20:00" },
+    location: "이화회관 1층",
+    lat: 37.56180, lng: 126.94830,
+    open: false,
+    phone: "02-3277-3310"
+  },
+  {
+    id: "posco",
+    name: "포스코 카페테리아",
+    icon: "⚙️",
+    building: "포스코관",
+    floor: "1층",
+    hours: { 아침:"–", 점심:"11:00–14:00", 저녁:"–" },
+    location: "포스코관 1층",
+    lat: 37.56317, lng: 126.94804,
+    open: true,
+    phone: "02-3277-2400"
+  }
+];
+
+const menus = [
+  // 학생식당
+  { id:1, cafeId:"student", meal:"아침", name:"아침 정식", items:["잡곡밥","된장찌개","계란후라이","깍두기","배추김치"], price:3000, cal:620, crowd:"여유", wait:0, rating:3.8, fav:false },
+  { id:2, cafeId:"student", meal:"점심", name:"A코스 — 불고기 정식", items:["불고기","잡곡밥","미역국","콩나물무침","배추김치"], price:5000, cal:820, crowd:"보통", wait:8, rating:4.3, fav:false },
+  { id:3, cafeId:"student", meal:"점심", name:"B코스 — 제육볶음", items:["제육볶음","흰쌀밥","된장찌개","시금치나물","깍두기"], price:5000, cal:780, crowd:"혼잡", wait:15, rating:4.1, fav:false },
+  { id:4, cafeId:"student", meal:"점심", name:"C코스 — 순두부찌개", items:["순두부찌개","흰쌀밥","삼치구이","브로콜리볶음","배추김치"], price:4500, cal:640, crowd:"여유", wait:3, rating:4.0, fav:false },
+  { id:5, cafeId:"student", meal:"점심", name:"채식 코스", items:["두부구이","잡곡밥","버섯된장찌개","호박볶음","백김치"], price:4000, cal:520, crowd:"여유", wait:0, rating:3.9, fav:false },
+  { id:6, cafeId:"student", meal:"저녁", name:"저녁 정식", items:["삼겹살구이","흰쌀밥","김치찌개","계란말이","배추김치"], price:5500, cal:870, crowd:"보통", wait:5, rating:4.2, fav:false },
+
+  // ECC 식당
+  { id:7, cafeId:"ecc", meal:"점심", name:"ECC 한식 정식", items:["갈비탕","흰쌀밥","잡채","도라지무침","배추김치"], price:6000, cal:750, crowd:"보통", wait:10, rating:4.4, fav:false },
+  { id:8, cafeId:"ecc", meal:"점심", name:"ECC 파스타", items:["크림파스타","샐러드","마늘빵","음료"], price:7000, cal:890, crowd:"여유", wait:3, rating:4.2, fav:false },
+  { id:9, cafeId:"ecc", meal:"점심", name:"ECC 덮밥", items:["참치마요덮밥","미소국","단무지"], price:5500, cal:680, crowd:"여유", wait:2, rating:3.8, fav:false },
+  { id:10, cafeId:"ecc", meal:"저녁", name:"ECC 저녁 한정 스테이크", items:["등심스테이크","감자튀김","샐러드","빵"], price:12000, cal:1100, crowd:"여유", wait:0, rating:4.7, fav:false },
+
+  // 교직원식당
+  { id:11, cafeId:"faculty", meal:"점심", name:"교직원 A정식", items:["소불고기","잡곡밥","된장찌개","잡채","배추김치"], price:6500, cal:800, crowd:"여유", wait:2, rating:4.5, fav:false },
+  { id:12, cafeId:"faculty", meal:"점심", name:"교직원 B정식", items:["연어구이","흰쌀밥","미역국","시금치나물","깍두기"], price:7000, cal:720, crowd:"여유", wait:0, rating:4.6, fav:false },
+
+  // 이화회관 레스토랑
+  { id:13, cafeId:"guesthouse", meal:"점심", name:"이화회관 런치 세트", items:["한식 코스","수프","샐러드","디저트","음료"], price:15000, cal:950, crowd:"여유", wait:5, rating:4.8, fav:false },
+  { id:14, cafeId:"guesthouse", meal:"저녁", name:"이화회관 디너 코스", items:["전채","메인","디저트","음료"], price:25000, cal:1200, crowd:"여유", wait:10, rating:4.9, fav:false },
+
+  // 포스코 카페테리아
+  { id:15, cafeId:"posco", meal:"점심", name:"포스코 정식", items:["닭볶음탕","흰쌀밥","콩나물국","감자볶음","배추김치"], price:5000, cal:750, crowd:"여유", wait:3, rating:4.0, fav:false },
+  { id:16, cafeId:"posco", meal:"점심", name:"포스코 면 코너", items:["잔치국수 or 비빔국수","만두","깍두기"], price:4000, cal:580, crowd:"보통", wait:7, rating:3.7, fav:false },
+];
+
+const reviews = [
+  { id:1, cafeId:"student", cafe:"학생식당", reviewer:"은비", date:"방금", rating:5, crowd:"여유", text:"오늘 불고기 진짜 맛있었어요!! A코스 강추강추 🙌" },
+  { id:2, cafeId:"ecc", cafe:"ECC 식당", reviewer:"지현", date:"15분 전", rating:4, crowd:"보통", text:"ECC 파스타 처음 먹어봤는데 생각보다 괜찮음. 양이 좀 적긴 해요." },
+  { id:3, cafeId:"student", cafe:"학생식당", reviewer:"수아", date:"1시간 전", rating:3, crowd:"혼잡", text:"점심시간에 줄이 너무 길어서 30분 기다림… 미리 가세요" },
+  { id:4, cafeId:"faculty", cafe:"교직원식당", reviewer:"나연", date:"2시간 전", rating:5, crowd:"여유", text:"교직원식당 몰래 가봤는데 퀄리티가 달라요 진짜로ㅋㅋ" },
+  { id:5, cafeId:"ecc", cafe:"ECC 식당", reviewer:"민서", date:"어제", rating:4, crowd:"여유", text:"저녁 스테이크 12000원인데 가성비 최고임. 학식에서 이런 게 나온다고?" },
+  { id:6, cafeId:"posco", cafe:"포스코 카페테리아", reviewer:"하은", date:"어제", rating:3, crowd:"보통", text:"포스코 면 코너는 그냥 무난. 국수 양은 많아요." },
+];
+
+// =====================================================
+// 상태
+// =====================================================
+let currentPage = "home";
+let selectedCafe = "all";
+let currentFilter = "all";
+let selectedRating = 0;
+let userReviews = [];
+let kakaoMap = null;
+let kakaoMarkers = [];
+
+// =====================================================
+// 유틸
+// =====================================================
+function getCrowdColor(crowd) {
+  return { 여유:"#7a8c5e", 보통:"#9a7420", 혼잡:"#c0622f", 매우혼잡:"#b01e1e" }[crowd] || "#9a8070";
+}
+function getCrowdBarWidth(crowd) {
+  return { 여유:20, 보통:50, 혼잡:78, 매우혼잡:97 }[crowd] || 0;
+}
+function getCrowdBarColor(crowd) {
+  return { 여유:"#7a8c5e", 보통:"#d4a336", 혼잡:"#c0622f", 매우혼잡:"#b01e1e" }[crowd] || "#9a8070";
+}
+function starHtml(rating) {
+  return "⭐".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating));
+}
+function nowTime() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0");
+}
+
+// =====================================================
+// 헤더 시계
+// =====================================================
+function startClock() {
+  const el = document.getElementById("liveTime");
+  const tick = () => { if(el) el.textContent = nowTime(); };
+  tick();
+  setInterval(tick, 10000);
+}
+
+// =====================================================
+// 네비
+// =====================================================
+function initNav() {
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const page = btn.dataset.page;
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+      document.getElementById("page-" + page).classList.add("active");
+      btn.classList.add("active");
+      currentPage = page;
+      if (page === "cafeteria") renderCafeteriaInfo();
+      if (page === "review") renderReviews();
+      if (page === "my") renderMy();
+    });
+  });
+}
+
+// =====================================================
+// 히어로 통계
+// =====================================================
+function renderHeroStats() {
+  const openC = cafeterias.filter(c => c.open).length;
+  const menuC = menus.length;
+  const waits = menus.map(m => m.wait).filter(w => w > 0);
+  const avgW = waits.length ? Math.round(waits.reduce((a,b)=>a+b,0)/waits.length) : 0;
+  document.getElementById("openCount").textContent = openC;
+  document.getElementById("menuCount").textContent = menuC;
+  document.getElementById("avgWait").textContent = avgW + "분";
+
+  // 오늘의 추천: 여유 + 평점 높은 것
+  const best = [...menus].filter(m=>m.crowd==="여유").sort((a,b)=>b.rating-a.rating)[0];
+  if (best) {
+    const cafe = cafeterias.find(c=>c.id===best.cafeId);
+    document.getElementById("todayPickTitle").textContent = (cafe ? cafe.name + " — " : "") + best.name;
+    document.getElementById("todayPickDesc").textContent =
+      `${best.meal} · ${best.price.toLocaleString()}원 · 지금 바로 이용 가능해요 🙆‍♀️`;
+  }
+}
+
+// =====================================================
+// 식당 탭
+// =====================================================
+function renderCafeTabs() {
+  const wrap = document.getElementById("cafeTabs");
+  wrap.innerHTML = "";
+  const allBtn = document.createElement("button");
+  allBtn.className = "cafe-tab" + (selectedCafe==="all" ? " active" : "");
+  allBtn.textContent = "전체";
+  allBtn.onclick = () => { selectedCafe="all"; renderCafeTabs(); renderMenuList(); };
+  wrap.appendChild(allBtn);
+  cafeterias.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "cafe-tab" + (selectedCafe===c.id ? " active" : "");
+    btn.textContent = c.icon + " " + c.name;
+    btn.onclick = () => { selectedCafe=c.id; renderCafeTabs(); renderMenuList(); };
+    wrap.appendChild(btn);
+  });
+}
+
+// =====================================================
+// 메뉴 리스트
+// =====================================================
+function renderMenuList() {
+  const list = document.getElementById("menuList");
+  const search = document.getElementById("searchInput").value.toLowerCase();
+
+  let filtered = menus;
+  if (selectedCafe !== "all") filtered = filtered.filter(m => m.cafeId === selectedCafe);
+  if (currentFilter === "아침") filtered = filtered.filter(m => m.meal === "아침");
+  else if (currentFilter === "점심") filtered = filtered.filter(m => m.meal === "점심");
+  else if (currentFilter === "저녁") filtered = filtered.filter(m => m.meal === "저녁");
+  else if (currentFilter === "여유") filtered = filtered.filter(m => m.crowd === "여유");
+  else if (currentFilter === "low-cal") filtered = filtered.filter(m => m.cal < 700);
+  if (search) filtered = filtered.filter(m =>
+    m.name.toLowerCase().includes(search) ||
+    m.items.some(i => i.toLowerCase().includes(search)) ||
+    (cafeterias.find(c=>c.id===m.cafeId)?.name||"").toLowerCase().includes(search)
+  );
+
+  document.getElementById("menuStatus").textContent = `${filtered.length}개`;
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<p class="subtle">검색 결과가 없어요.</p>`;
+    return;
+  }
+
+  list.innerHTML = "";
+  filtered.forEach((m, i) => {
+    const cafe = cafeterias.find(c => c.id === m.cafeId);
+    const barW = getCrowdBarWidth(m.crowd);
+    const barC = getCrowdBarColor(m.crowd);
+    const card = document.createElement("div");
+    card.className = "menu-card";
+    card.style.animationDelay = (i * 0.06) + "s";
+    card.innerHTML = `
+      <div class="menu-card-top">
+        <div style="flex:1">
+          <div class="menu-meal-type">${cafe ? cafe.icon+" "+cafe.name : ""} · ${m.meal}</div>
+          <div class="menu-name">${m.name}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="menu-price">${m.price.toLocaleString()}원</div>
+          <button class="fav-btn" data-id="${m.id}">${m.fav ? "💛" : "🤍"}</button>
+        </div>
+      </div>
+      <div class="menu-items">
+        ${m.items.map((it,idx) => `<span class="menu-item-chip${idx===0?" main":""}">${it}</span>`).join("")}
+      </div>
+      <div class="menu-meta">
+        <span class="crowd-badge ${m.crowd}">
+          ${m.crowd==="여유"?"🟢":m.crowd==="보통"?"🟡":m.crowd==="혼잡"?"🟠":"🔴"} ${m.crowd}
+        </span>
+        ${m.wait > 0 ? `<span class="wait-badge">⏱ 약 ${m.wait}분 대기</span>` : `<span class="wait-badge">⚡ 대기 없음</span>`}
+        <span class="calorie-badge">🔥 ${m.cal}kcal</span>
+      </div>
+      <div class="crowd-bar-wrap">
+        <div class="crowd-bar-label"><span>혼잡도</span><span>${starHtml(m.rating)} ${m.rating}</span></div>
+        <div class="crowd-bar-bg">
+          <div class="crowd-bar-fill" style="width:${barW}%;background:${barC};"></div>
+        </div>
+      </div>`;
+    card.querySelector(".fav-btn").addEventListener("click", e => {
+      m.fav = !m.fav;
+      e.target.textContent = m.fav ? "💛" : "🤍";
+      updateMyStats();
+    });
+    list.appendChild(card);
+  });
+}
+
+// =====================================================
+// 필터
+// =====================================================
+function initFilters() {
+  document.querySelectorAll(".filter-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filter-chip").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+      renderMenuList();
+    });
+  });
+  document.getElementById("searchInput").addEventListener("input", renderMenuList);
+}
+
+// =====================================================
+// 식당 정보 페이지
+// =====================================================
+function renderCafeteriaInfo() {
+  const list = document.getElementById("cafeteriaInfoList");
+  list.innerHTML = "";
+  cafeterias.forEach(c => {
+    const card = document.createElement("div");
+    card.className = "cafeteria-info-card";
+    const isOpen = c.open;
+    card.innerHTML = `
+      <div class="cafe-icon">${c.icon}</div>
+      <div class="cafe-info" style="flex:1">
+        <h4>${c.name}</h4>
+        <p>📍 ${c.location}<br>📞 ${c.phone}</p>
+        <p style="margin-top:4px;font-size:11px;color:var(--muted);">
+          ${Object.entries(c.hours).map(([k,v])=>`<b>${k}</b> ${v}`).join(" &nbsp;|&nbsp; ")}
+        </p>
+        <div class="cafe-status" style="color:${isOpen?"#7a8c5e":"#9a8070"}">
+          <span class="status-dot ${isOpen?"status-open":"status-closed"}"></span>
+          ${isOpen ? "지금 운영 중" : "현재 운영 종료"}
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+  initKakaoMap();
+}
+
+// =====================================================
+// 카카오맵
+// =====================================================
+function initKakaoMap() {
+  if (typeof kakao === "undefined") {
+    document.getElementById("kakaoMap").innerHTML =
+      `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;color:var(--muted);padding:20px;text-align:center;">
+        🗺️ 카카오맵 API 키를 설정해주세요.</div>`;
+    return;
+  }
+  if (kakaoMap) return;
+  const container = document.getElementById("kakaoMap");
+  kakaoMap = new kakao.maps.Map(container, {
+    center: new kakao.maps.LatLng(37.56261, 126.94751), level: 4
+  });
+
+  // 현재 위치
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const myOverlay = new kakao.maps.CustomOverlay({
+        position: new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude),
+        content: `<div style="width:16px;height:16px;border-radius:50%;background:#2f80ed;border:3px solid white;box-shadow:0 2px 8px rgba(47,128,237,0.5);transform:translate(-50%,-50%)"></div>`,
+        zIndex: 10
+      });
+      myOverlay.setMap(kakaoMap);
+    });
+  }
+
+  // 식당 마커
+  cafeterias.forEach(c => {
+    const svgColor = c.open ? "#7a8c5e" : "#9a8070";
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='44' viewBox='0 0 36 44'><path d='M18 0C9 0 2 7 2 16c0 12 16 28 16 28s16-16 16-28C34 7 27 0 18 0z' fill='${svgColor}' stroke='white' stroke-width='2'/><text x='18' y='21' font-size='13' text-anchor='middle' fill='white'>${encodeURIComponent(c.icon)}</text></svg>`;
+    const img = new kakao.maps.MarkerImage(
+      "data:image/svg+xml;charset=utf-8," + svg,
+      new kakao.maps.Size(36,44), { offset: new kakao.maps.Point(18,44) }
+    );
+    const marker = new kakao.maps.Marker({
+      map: kakaoMap,
+      position: new kakao.maps.LatLng(c.lat, c.lng),
+      title: c.name, image: img
+    });
+    const iw = new kakao.maps.InfoWindow({
+      content: `<div style='padding:8px 12px;font-size:12px;font-weight:700;color:#6b4c2a;white-space:nowrap;font-family:Noto Sans KR,sans-serif'>${c.icon} ${c.name}<br><span style='font-size:10px;color:#9a8070;font-weight:400'>${c.open?"🟢 운영 중":"⚫ 운영 종료"}</span></div>`
+    });
+    kakao.maps.event.addListener(marker, "click", () => {
+      kakaoMarkers.forEach(m=>m.iw.close());
+      iw.open(kakaoMap, marker);
+    });
+    kakaoMarkers.push({ marker, iw });
+  });
+}
+
+// =====================================================
+// 리뷰
+// =====================================================
+function renderReviews() {
+  const list = document.getElementById("reviewList");
+  const all = [...reviews, ...userReviews].reverse();
+  list.innerHTML = "";
+  all.forEach(r => {
+    const card = document.createElement("div");
+    card.className = "review-card";
+    card.innerHTML = `
+      <div class="review-header">
+        <span class="reviewer">👤 ${r.reviewer}</span>
+        <span class="review-date">${r.date}</span>
+      </div>
+      <div class="review-stars">${"⭐".repeat(r.rating)}</div>
+      <div class="review-text">${r.text}</div>
+      ${r.crowd ? `<span class="crowd-badge ${r.crowd}" style="margin-top:8px;display:inline-flex">${r.crowd}</span>` : ""}
+      <div class="review-cafe-tag">${r.cafe}</div>`;
+    list.appendChild(card);
+  });
+
+  // 리뷰 셀렉트 채우기
+  const sel = document.getElementById("reviewCafe");
+  if (sel.options.length === 0) {
+    cafeterias.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id; opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+// =====================================================
+// 별점
+// =====================================================
+function initStarRating() {
+  document.querySelectorAll(".star").forEach(star => {
+    star.addEventListener("click", () => {
+      selectedRating = parseInt(star.dataset.v);
+      document.querySelectorAll(".star").forEach(s => {
+        s.classList.toggle("active", parseInt(s.dataset.v) <= selectedRating);
+      });
+    });
+  });
+}
+
+// =====================================================
+// 후기 제출
+// =====================================================
+function initReviewForm() {
+  document.getElementById("submitReviewBtn").addEventListener("click", () => {
+    const cafeId = document.getElementById("reviewCafe").value;
+    const crowd  = document.getElementById("crowdSelect").value;
+    const text   = document.getElementById("reviewText").value.trim();
+    const msg    = document.getElementById("reviewMsg");
+    if (!selectedRating) { msg.textContent = "⭐ 평점을 선택해주세요!"; return; }
+    if (!text) { msg.textContent = "✏️ 후기를 입력해주세요!"; return; }
+    const cafe = cafeterias.find(c=>c.id===cafeId);
+    userReviews.push({
+      id: Date.now(), cafeId, cafe: cafe?.name || cafeId,
+      reviewer:"나", date:"방금", rating: selectedRating, crowd, text
+    });
+    msg.textContent = "✅ 후기가 등록됐어요!";
+    document.getElementById("reviewText").value = "";
+    selectedRating = 0;
+    document.querySelectorAll(".star").forEach(s=>s.classList.remove("active"));
+    updateMyStats();
+    setTimeout(()=>{ msg.textContent=""; }, 2500);
+  });
+}
+
+// =====================================================
+// 마이페이지
+// =====================================================
+function updateMyStats() {
+  document.getElementById("myFavCount").textContent = menus.filter(m=>m.fav).length;
+  document.getElementById("myReviewCount").textContent = userReviews.length;
+}
+
+function renderMy() {
+  updateMyStats();
+  const favList = document.getElementById("favList");
+  const favMenus = menus.filter(m=>m.fav);
+  if (favMenus.length === 0) {
+    favList.innerHTML = `<p class="subtle">💛 즐겨찾기한 메뉴가 없어요.</p>`;
+  } else {
+    favList.innerHTML = favMenus.map(m => {
+      const c = cafeterias.find(x=>x.id===m.cafeId);
+      return `<div class="menu-card" style="animation:none">
+        <div class="menu-meal-type">${c?c.name:""} · ${m.meal}</div>
+        <div class="menu-name">${m.name}</div>
+        <div class="menu-meta" style="margin-top:8px">
+          <span class="crowd-badge ${m.crowd}">${m.crowd}</span>
+          <span class="calorie-badge">🔥 ${m.cal}kcal</span>
+          <span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--rust)">${m.price.toLocaleString()}원</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  const myRev = document.getElementById("myReviewList");
+  if (userReviews.length === 0) {
+    myRev.innerHTML = `<p class="subtle">✏️ 작성한 후기가 없어요.</p>`;
+  } else {
+    myRev.innerHTML = userReviews.map(r=>`
+      <div class="review-card">
+        <div class="review-header"><span class="reviewer">👤 나</span><span class="review-date">${r.date}</span></div>
+        <div class="review-stars">${"⭐".repeat(r.rating)}</div>
+        <div class="review-text">${r.text}</div>
+        <div class="review-cafe-tag">${r.cafe}</div>
+      </div>`).join("");
+  }
+}
+
+// =====================================================
+// 초기화
+// =====================================================
+document.addEventListener("DOMContentLoaded", () => {
+  startClock();
+  initNav();
+  renderHeroStats();
+  renderCafeTabs();
+  renderMenuList();
+  initFilters();
+  initStarRating();
+  initReviewForm();
+  updateMyStats();
+});
+</script>
+</body>
+</html>
