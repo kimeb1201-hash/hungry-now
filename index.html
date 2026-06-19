@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>식단 Now — 이화여대 학식 가이드</title>
+  <title>Hungry Now — 이화여대 학식 가이드</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     :root {
       --cream:   #fdf6ec;
@@ -366,6 +368,28 @@
 
     .subtle { font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px; }
 
+    /* ── 로그인 모달 ── */
+    .modal {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(42, 31, 20, 0.35);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal.hidden { display: none; }
+    .modal-content {
+      width: min(420px, 100%);
+      margin: 0 !important;
+    }
+    .auth-form { display: flex; flex-direction: column; gap: 4px; }
+    .auth-error {
+      background: rgba(192,98,47,0.08);
+      border: 1px solid rgba(192,98,47,0.25);
+      border-radius: 12px; padding: 10px 14px;
+      font-size: 13px; color: var(--rust); margin-bottom: 12px;
+    }
+    .hidden { display: none !important; }
+
     /* ── 애니메이션 ── */
     @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
     .menu-card, .review-card, .cafeteria-info-card { animation: fadeUp 0.4s ease both; }
@@ -377,11 +401,17 @@
     <div class="brand">
       <div class="brand-emoji">🍽️</div>
       <div>
-        <h1>식단 Now</h1>
+        <h1>Hungry Now</h1>
         <p>ewha campus dining guide</p>
       </div>
     </div>
-    <div class="header-badge" id="liveTime">--:--</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="header-badge" id="liveTime">--:--</span>
+      <button type="button" id="loginBtn"
+        style="background:none;border:1.5px solid var(--border);border-radius:50%;
+               width:30px;height:30px;font-size:14px;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;color:var(--brown);">👤</button>
+    </div>
   </header>
 
   <div style="flex:1; overflow-y:auto;">
@@ -500,13 +530,17 @@
     <!-- ── 마이 ── -->
     <section class="page" id="page-my">
       <div class="my-card">
-        <div class="my-avatar">👤</div>
-        <div class="my-name">이화인</div>
-        <div class="my-email">ewha@ewhain.net</div>
+        <div class="my-avatar" id="profileAvatar">👤</div>
+        <div class="my-name" id="profileName">로그인이 필요합니다</div>
+        <div class="my-email" id="profileEmail">Hungry Now에 로그인해보세요!</div>
         <div class="my-stats-row">
           <div class="my-stat"><strong id="myFavCount">0</strong><span>즐겨찾기</span></div>
           <div class="my-stat"><strong id="myReviewCount">0</strong><span>작성 후기</span></div>
           <div class="my-stat"><strong id="myVisitCount">0</strong><span>방문 횟수</span></div>
+        </div>
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+          <button class="btn-primary" id="myLoginBtn" style="padding:11px;">🔐 로그인 / 회원가입</button>
+          <button class="btn-ghost hidden" id="myLogoutBtn" style="width:100%;text-align:center;">로그아웃</button>
         </div>
       </div>
       <div class="section">
@@ -529,10 +563,62 @@
   </nav>
 </div>
 
+<!-- 로그인 모달 -->
+<div class="modal hidden" id="authModal">
+  <div class="modal-content" style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:28px 24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <h3 id="authModalTitle" style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--brown);">로그인</h3>
+        <span style="font-size:11px;color:var(--muted);">Hungry Now 계정</span>
+      </div>
+      <button type="button" class="btn-ghost" id="closeAuthBtn">닫기</button>
+    </div>
+    <p id="authError" class="auth-error hidden"></p>
+    <div class="auth-form">
+      <label class="form-label" for="authEmail">이메일</label>
+      <input type="email" id="authEmail" class="form-input" placeholder="ewha@ewhain.net" />
+      <label class="form-label" for="authPassword" style="margin-top:12px;">비밀번호</label>
+      <input type="password" id="authPassword" class="form-input" placeholder="6자 이상" />
+      <div id="signupExtra" class="hidden">
+        <label class="form-label" for="authNickname" style="margin-top:12px;">닉네임</label>
+        <input type="text" id="authNickname" class="form-input" placeholder="예: 은비" />
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px;">
+        <button type="button" class="btn-primary" id="authSubmitBtn">🔐 로그인</button>
+        <button type="button" class="btn-ghost" id="authToggleBtn" style="width:100%;text-align:center;">계정이 없나요? 회원가입</button>
+      </div>
+      <div style="margin-top:14px;">
+        <button type="button" class="btn-ghost" id="googleSignInBtn"
+          style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span>🌐</span> Google 계정으로 로그인
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript"
-  src="//dapi.kakao.com/v2/maps/sdk.js?appkey=1c5fe293a4ccf0178633e8112996c891&libraries=services">
+  src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_KEY&libraries=services">
 </script>
 <script>
+// =====================================================
+// Firebase 설정 (Toilet Now와 동일 프로젝트 사용)
+// =====================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAdUf6LmkjFMNgNtenkTeKs6sxH-sYXRBQ",
+  authDomain: "toilet-now-26b3d.firebaseapp.com",
+  projectId: "toilet-now-26b3d",
+  storageBucket: "toilet-now-26b3d.firebasestorage.app",
+  messagingSenderId: "514569501313",
+  appId: "1:514569501313:web:cca6374cf90f42262f6b80",
+  measurementId: "G-S2E085YG58"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+let currentUser = null;
+let isSignupMode = false;
+
 // =====================================================
 // 데이터
 // =====================================================
@@ -541,10 +627,10 @@ const cafeterias = [
     id: "student",
     name: "학생식당",
     icon: "🏠",
-    building: "학생문화관",
+    building: "아이하우스",
     floor: "1층",
     hours: { 아침:"07:30–09:00", 점심:"11:00–14:00", 저녁:"17:00–19:00" },
-    location: "학생문화관 1층",
+    location: "아이하우스 1층",
     lat: 37.56261, lng: 126.94751,
     open: true,
     phone: "02-3277-2114"
@@ -554,9 +640,9 @@ const cafeterias = [
     name: "ECC 식당",
     icon: "🏛️",
     building: "ECC",
-    floor: "B3",
+    floor: "B4",
     hours: { 아침:"–", 점심:"11:00–14:30", 저녁:"17:00–18:30" },
-    location: "ECC 지하 3층",
+    location: "ECC 지하 4층",
     lat: 37.56219, lng: 126.94682,
     open: true,
     phone: "02-3277-3000"
@@ -565,34 +651,34 @@ const cafeterias = [
     id: "faculty",
     name: "교직원식당",
     icon: "🎓",
-    building: "본관",
-    floor: "2층",
+    building: "진선미관",
+    floor: "1층",
     hours: { 아침:"–", 점심:"11:30–13:30", 저녁:"–" },
-    location: "본관 2층",
+    location: "진선미관 1층",
     lat: 37.56310, lng: 126.94770,
     open: true,
     phone: "02-3277-2115"
   },
   {
     id: "guesthouse",
-    name: "이화회관 레스토랑",
+    name: "기숙사식당",
     icon: "🍷",
-    building: "이화회관",
-    floor: "1층",
+    building: "한우리집",
+    floor: "B2",
     hours: { 아침:"–", 점심:"11:30–14:00", 저녁:"17:30–20:00" },
-    location: "이화회관 1층",
+    location: "한우리집 B2층",
     lat: 37.56180, lng: 126.94830,
     open: false,
     phone: "02-3277-3310"
   },
   {
     id: "posco",
-    name: "포스코 카페테리아",
+    name: "포스코관 오봉도시락",
     icon: "⚙️",
     building: "포스코관",
-    floor: "1층",
+    floor: "B1",
     hours: { 아침:"–", 점심:"11:00–14:00", 저녁:"–" },
-    location: "포스코관 1층",
+    location: "포스코관 B1층",
     lat: 37.56317, lng: 126.94804,
     open: true,
     phone: "02-3277-2400"
@@ -618,13 +704,13 @@ const menus = [
   { id:11, cafeId:"faculty", meal:"점심", name:"교직원 A정식", items:["소불고기","잡곡밥","된장찌개","잡채","배추김치"], price:6500, cal:800, crowd:"여유", wait:2, rating:4.5, fav:false },
   { id:12, cafeId:"faculty", meal:"점심", name:"교직원 B정식", items:["연어구이","흰쌀밥","미역국","시금치나물","깍두기"], price:7000, cal:720, crowd:"여유", wait:0, rating:4.6, fav:false },
 
-  // 이화회관 레스토랑
-  { id:13, cafeId:"guesthouse", meal:"점심", name:"이화회관 런치 세트", items:["한식 코스","수프","샐러드","디저트","음료"], price:15000, cal:950, crowd:"여유", wait:5, rating:4.8, fav:false },
-  { id:14, cafeId:"guesthouse", meal:"저녁", name:"이화회관 디너 코스", items:["전채","메인","디저트","음료"], price:25000, cal:1200, crowd:"여유", wait:10, rating:4.9, fav:false },
+  // 기숙사식당
+  { id:13, cafeId:"guesthouse", meal:"점심", name:"기숙사식당 런치 세트", items:["한식 코스","수프","샐러드","디저트","음료"], price:15000, cal:950, crowd:"여유", wait:5, rating:4.8, fav:false },
+  { id:14, cafeId:"guesthouse", meal:"저녁", name:"기숙사식당 디너 코스", items:["전채","메인","디저트","음료"], price:25000, cal:1200, crowd:"여유", wait:10, rating:4.9, fav:false },
 
-  // 포스코 카페테리아
-  { id:15, cafeId:"posco", meal:"점심", name:"포스코 정식", items:["닭볶음탕","흰쌀밥","콩나물국","감자볶음","배추김치"], price:5000, cal:750, crowd:"여유", wait:3, rating:4.0, fav:false },
-  { id:16, cafeId:"posco", meal:"점심", name:"포스코 면 코너", items:["잔치국수 or 비빔국수","만두","깍두기"], price:4000, cal:580, crowd:"보통", wait:7, rating:3.7, fav:false },
+  // 포스코관 오봉도시락
+  { id:15, cafeId:"posco", meal:"점심", name:"오봉도시락 정식", items:["닭볶음탕","흰쌀밥","콩나물국","감자볶음","배추김치"], price:5000, cal:750, crowd:"여유", wait:3, rating:4.0, fav:false },
+  { id:16, cafeId:"posco", meal:"점심", name:"오봉도시락 면 코너", items:["잔치국수 or 비빔국수","만두","깍두기"], price:4000, cal:580, crowd:"보통", wait:7, rating:3.7, fav:false },
 ];
 
 const reviews = [
@@ -633,7 +719,7 @@ const reviews = [
   { id:3, cafeId:"student", cafe:"학생식당", reviewer:"수아", date:"1시간 전", rating:3, crowd:"혼잡", text:"점심시간에 줄이 너무 길어서 30분 기다림… 미리 가세요" },
   { id:4, cafeId:"faculty", cafe:"교직원식당", reviewer:"나연", date:"2시간 전", rating:5, crowd:"여유", text:"교직원식당 몰래 가봤는데 퀄리티가 달라요 진짜로ㅋㅋ" },
   { id:5, cafeId:"ecc", cafe:"ECC 식당", reviewer:"민서", date:"어제", rating:4, crowd:"여유", text:"저녁 스테이크 12000원인데 가성비 최고임. 학식에서 이런 게 나온다고?" },
-  { id:6, cafeId:"posco", cafe:"포스코 카페테리아", reviewer:"하은", date:"어제", rating:3, crowd:"보통", text:"포스코 면 코너는 그냥 무난. 국수 양은 많아요." },
+  { id:6, cafeId:"posco", cafe:"포스코관 오봉도시락", reviewer:"하은", date:"어제", rating:3, crowd:"보통", text:"오봉도시락 면 코너는 그냥 무난. 국수 양은 많아요." },
 ];
 
 // =====================================================
@@ -1017,6 +1103,152 @@ function renderMy() {
       </div>`).join("");
   }
 }
+
+// =====================================================
+// Firebase 인증 상태 감지 + UI 업데이트
+// =====================================================
+auth.onAuthStateChanged((user) => {
+  currentUser = user;
+  updateAuthUI(user);
+});
+
+function updateAuthUI(user) {
+  const loginBtn    = document.getElementById("loginBtn");
+  const myLoginBtn   = document.getElementById("myLoginBtn");
+  const myLogoutBtn  = document.getElementById("myLogoutBtn");
+  const profileName  = document.getElementById("profileName");
+  const profileEmail = document.getElementById("profileEmail");
+  const profileAvatar = document.getElementById("profileAvatar");
+
+  if (user) {
+    loginBtn.textContent = "✅";
+    loginBtn.title = user.displayName || user.email;
+
+    profileName.textContent  = (user.displayName || "이화인") + "님의 Hungry Now";
+    profileEmail.textContent = user.email;
+    profileAvatar.textContent = user.displayName ? user.displayName[0] : "👤";
+
+    myLoginBtn.classList.add("hidden");
+    myLogoutBtn.classList.remove("hidden");
+  } else {
+    loginBtn.textContent = "👤";
+    loginBtn.title = "로그인";
+
+    profileName.textContent  = "로그인이 필요합니다";
+    profileEmail.textContent = "Hungry Now에 로그인해보세요!";
+    profileAvatar.textContent = "👤";
+
+    myLoginBtn.classList.remove("hidden");
+    myLogoutBtn.classList.add("hidden");
+  }
+}
+
+// =====================================================
+// 로그인 / 회원가입 모달
+// =====================================================
+const authModal      = document.getElementById("authModal");
+const authError       = document.getElementById("authError");
+const authEmail       = document.getElementById("authEmail");
+const authPassword    = document.getElementById("authPassword");
+const authNickname    = document.getElementById("authNickname");
+const authModalTitle  = document.getElementById("authModalTitle");
+const authSubmitBtn   = document.getElementById("authSubmitBtn");
+const authToggleBtn   = document.getElementById("authToggleBtn");
+const signupExtra     = document.getElementById("signupExtra");
+
+function openAuthModal() {
+  authModal.classList.remove("hidden");
+  authError.classList.add("hidden");
+  authError.textContent = "";
+  authEmail.value = "";
+  authPassword.value = "";
+  authNickname.value = "";
+  setSignupMode(false);
+}
+
+function closeAuthModal() {
+  authModal.classList.add("hidden");
+}
+
+function setSignupMode(mode) {
+  isSignupMode = mode;
+  authModalTitle.textContent = mode ? "회원가입" : "로그인";
+  authSubmitBtn.textContent  = mode ? "✨ 회원가입" : "🔐 로그인";
+  authToggleBtn.textContent  = mode ? "이미 계정이 있나요? 로그인" : "계정이 없나요? 회원가입";
+  signupExtra.classList.toggle("hidden", !mode);
+}
+
+function showAuthError(msg) {
+  authError.textContent = msg;
+  authError.classList.remove("hidden");
+}
+
+document.getElementById("authSubmitBtn").addEventListener("click", async () => {
+  const email    = authEmail.value.trim();
+  const password = authPassword.value.trim();
+  const nickname = authNickname.value.trim();
+
+  if (!email || !password) {
+    showAuthError("이메일과 비밀번호를 입력해주세요.");
+    return;
+  }
+
+  try {
+    if (isSignupMode) {
+      const result = await auth.createUserWithEmailAndPassword(email, password);
+      if (nickname) {
+        await result.user.updateProfile({ displayName: nickname });
+      }
+      closeAuthModal();
+      alert(`🎉 ${nickname || email}님, 환영해요!`);
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+      closeAuthModal();
+    }
+  } catch (e) {
+    const messages = {
+      "auth/email-already-in-use": "이미 사용 중인 이메일이에요.",
+      "auth/invalid-email": "이메일 형식이 올바르지 않아요.",
+      "auth/weak-password": "비밀번호는 6자 이상이어야 해요.",
+      "auth/user-not-found": "등록되지 않은 이메일이에요.",
+      "auth/wrong-password": "비밀번호가 틀렸어요.",
+      "auth/invalid-credential": "이메일 또는 비밀번호가 틀렸어요.",
+    };
+    showAuthError(messages[e.code] || "오류가 발생했어요: " + e.message);
+  }
+});
+
+document.getElementById("authToggleBtn").addEventListener("click", () => {
+  setSignupMode(!isSignupMode);
+  authError.classList.add("hidden");
+});
+
+document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await auth.signInWithPopup(provider);
+    closeAuthModal();
+  } catch (e) {
+    showAuthError("Google 로그인 중 오류가 발생했어요.");
+  }
+});
+
+document.getElementById("closeAuthBtn").addEventListener("click", closeAuthModal);
+
+document.getElementById("loginBtn").addEventListener("click", () => {
+  if (currentUser) {
+    document.querySelector('.nav-item[data-page="my"]').click();
+  } else {
+    openAuthModal();
+  }
+});
+
+document.getElementById("myLoginBtn").addEventListener("click", openAuthModal);
+
+document.getElementById("myLogoutBtn").addEventListener("click", async () => {
+  await auth.signOut();
+  alert("로그아웃 되었어요. 또 만나요! 👋");
+});
 
 // =====================================================
 // 초기화
